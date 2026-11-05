@@ -1,0 +1,52 @@
+"use client";
+
+import { useEffect, useId, useState } from "react";
+import { Clock3, Moon, Orbit, Radio, Sunrise, Sunset } from "lucide-react";
+import { useMeteora } from "@/components/providers";
+import { Metric, PageHeading, Panel, SourceNote, State } from "@/components/ui";
+import { fetchGeomagnetic } from "@/lib/api";
+import { useResource } from "@/lib/use-resource";
+import { calculateAstronomy, durationLabel, localDateKey, moonPhaseName } from "@/lib/astronomy";
+
+function MoonDisc({ fraction, waxing }: { fraction: number; waxing: boolean }) {
+  const id = useId().replace(/:/g, "");
+  const radius = 69;
+  const terminator = (2 * fraction - 1) * radius;
+  return <svg viewBox="0 0 180 180" width="180" height="180" role="img" aria-label={`${Math.round(fraction * 100)}%`}>
+    <defs><radialGradient id={id} cx="40%" cy="30%"><stop stopColor="#fbf9f0" /><stop offset="1" stopColor="#a4a8ba" /></radialGradient></defs>
+    <circle cx="90" cy="90" r="80" fill="#d5d7ff" opacity=".04" /><circle cx="90" cy="90" r={radius} fill="#373b56" />
+    <path transform={waxing ? undefined : "translate(180 0) scale(-1 1)"} d={`M90 21 A69 69 0 0 1 90 159 A${Math.max(.001, Math.abs(terminator))} 69 0 0 ${terminator >= 0 ? 1 : 0} 90 21`} fill={`url(#${id})`} />
+    <circle cx="65" cy="65" r="14" fill="#84889d" opacity=".18" /><circle cx="112" cy="100" r="19" fill="#777c95" opacity=".15" /><circle cx="75" cy="122" r="9" fill="#84889d" opacity=".14" />
+  </svg>;
+}
+
+export default function AstronomyPage() {
+  const { location, settings, t, weather } = useMeteora();
+  const [selectedDate, setSelectedDate] = useState("");
+  const [clock, setClock] = useState(() => new Date());
+  useEffect(() => { const timer = window.setInterval(() => setClock(new Date()), 60000); return () => window.clearInterval(timer); }, []);
+  const zone = weather.data?.timezone ?? location.timezone ?? "UTC";
+  const dateKey = selectedDate || localDateKey(clock, zone);
+  const astronomy = calculateAstronomy(dateKey, location.latitude, location.longitude, zone);
+  const geomagnetic = useResource("geomagnetic", fetchGeomagnetic);
+  const locale = settings.language === "ru" ? "ru-RU" : "en-GB";
+  const time = (date: Date | null | undefined) => date && Number.isFinite(date.getTime()) ? date.toLocaleTimeString(locale, { timeZone: zone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }) : "—";
+  const sun = astronomy.sun;
+  const moon = astronomy.moon;
+  const lastKp = geomagnetic.data?.latest;
+  const kpHigh = (lastKp?.kp ?? 0) >= 5;
+
+  return <div className="stack">
+    <PageHeading eyebrow={t("НЕБЕСНАЯ МЕХАНИКА", "CELESTIAL MECHANICS")} title={t("Ближе к небу", "A little closer to the sky")} description={`${location.name} · ${t("Солнце, Луна и ритмы планеты", "The Sun, the Moon, and the rhythms of our planet")}`} action={<label className="muted" style={{ display: "grid", gap: 5, fontSize: 12 }}>{t("Дата наблюдения", "Observation date")}<input className="input" type="date" value={dateKey} min="1900-01-01" max="2100-12-31" onChange={(event) => { if (event.target.validity.valid) setSelectedDate(event.target.value); }} /></label>} />
+    <div className="grid-2">
+      <Panel className="sun-panel"><span className="chip"><Sunrise size={15} />{t("Путь Солнца", "The Sun's path")}</span><div style={{ height: 168, margin: "18px 0 0", position: "relative" }} aria-hidden="true"><svg viewBox="0 0 480 170" style={{ width: "100%", height: "100%" }}><defs><linearGradient id="solar-arc"><stop stopColor="#eeaa78" /><stop offset=".5" stopColor="#efc169" /><stop offset="1" stopColor="#a09be8" /></linearGradient></defs><path d="M45 145 Q240 -110 435 145" fill="none" stroke="url(#solar-arc)" strokeWidth="3" strokeDasharray="5 7" /><path d="M25 145H455" stroke="currentColor" strokeOpacity=".12" /><circle cx="240" cy="18" r="28" fill="#efc169" opacity=".12" /><circle cx="240" cy="18" r="16" fill="#efc169" /><circle cx="45" cy="145" r="5" fill="#eeaa78" /><circle cx="435" cy="145" r="5" fill="#a09be8" /></svg></div><div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}><Metric label={t("Восход", "Sunrise")} value={time(sun.sunrise)} /><Metric label={t("Закат", "Sunset")} value={time(sun.sunset)} /></div><div style={{ borderTop: "1px solid var(--border, #e5e5ee)", marginTop: 22, paddingTop: 20, display: "flex", alignItems: "center", gap: 10 }}><Clock3 size={18} /><span className="muted">{t("Световой день", "Daylight")}</span><strong style={{ marginLeft: "auto" }}>{durationLabel(astronomy.daylightSeconds, settings.language)}</strong></div>{(sun.alwaysUp || sun.alwaysDown) && <p className="muted">{sun.alwaysUp ? t("Полярный день: Солнце не заходит.", "Polar day: the Sun does not set.") : t("Полярная ночь: Солнце не восходит.", "Polar night: the Sun does not rise.")}</p>}<SourceNote>{t("Схема солнечного пути. Все события рассчитаны для", "Schematic solar path. All events calculated for")} {dateKey} · {zone}</SourceNote></Panel>
+      <Panel className="moon-panel"><div style={{ background: "radial-gradient(ellipse at 70% 25%, #414165, #24263f 75%)", color: "#f7f7ff", borderRadius: 22, padding: "22px 24px", margin: -4 }}><span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#c2c4df" }}><Moon size={15} />{t("Луна в этот день", "The Moon on this date")}</span><div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><div><h2 style={{ fontSize: 26, maxWidth: 220, lineHeight: 1.2 }}>{moonPhaseName(astronomy.illumination.phase, settings.language)}</h2><p style={{ color: "#c2c4df", fontSize: 14 }}>{t("Освещённость", "Illumination")}</p><strong style={{ fontSize: 30, fontWeight: 500 }}>{Math.round(astronomy.illumination.fraction * 100)}%</strong></div><MoonDisc fraction={astronomy.illumination.fraction} waxing={astronomy.illumination.waxing} /></div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, borderTop: "1px solid #ffffff22", paddingTop: 18 }}><div><span style={{ fontSize: 12, color: "#c2c4df" }}>{t("Восход Луны", "Moonrise")}</span><div style={{ marginTop: 5, fontSize: 23 }}>{time(moon.rise)}</div></div><div><span style={{ fontSize: 12, color: "#c2c4df" }}>{t("Закат Луны", "Moonset")}</span><div style={{ marginTop: 5, fontSize: 23 }}>{time(moon.set)}</div></div></div><p style={{ fontSize: 12, color: "#c2c4df", lineHeight: 1.6, margin: "16px 0 0" }}>{moon.alwaysUp ? t("Луна над горизонтом весь день.", "The Moon is above the horizon all day.") : moon.alwaysDown ? t("Луна под горизонтом весь день.", "The Moon is below the horizon all day.") : t("«—» — событие не происходит в эту календарную дату. Форма Луны схематична.", "“—” means the event does not occur on this calendar date. The lunar disc is schematic.")}</p></div></Panel>
+    </div>
+    <div className="grid-3"><Panel><Metric icon={<Sunrise size={20} />} label={t("Утренний золотой час", "Morning golden hour")} value={sun.sunrise && sun.goldenHourEnd ? `${time(sun.sunrise)}–${time(sun.goldenHourEnd)}` : "—"} detail={t("От восхода до высоты Солнца 6°", "Sunrise to 6° solar altitude")} /></Panel><Panel><Metric icon={<Sunset size={20} />} label={t("Вечерний золотой час", "Evening golden hour")} value={sun.goldenHour && sun.sunset ? `${time(sun.goldenHour)}–${time(sun.sunset)}` : "—"} detail={t("Мягкий свет перед закатом", "Soft light before sunset")} /></Panel><Panel><Metric icon={<Moon size={20} />} label={t("Продолжительность ночи", "Night duration")} value={durationLabel(astronomy.nightSeconds, settings.language)} detail={t("Остаток 24-часового солнечного цикла", "The remainder of a 24-hour solar cycle")} /></Panel></div>
+    <div className="grid-2">
+      <Panel><h2 className="section-title">{t("Солнечные события", "Solar events")}</h2><div style={{ marginTop: 15 }}>{[[t("Гражданский рассвет", "Civil dawn"), sun.dawn], [t("Солнечный полдень", "Solar noon"), sun.solarNoon], [t("Гражданские сумерки", "Civil dusk"), sun.dusk], [t("Астрономическая ночь", "Astronomical night"), sun.night]].map(([label, date]) => <div key={String(label)} style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", gap: 15, borderBottom: "1px solid var(--border, #e5e5ee)" }}><span className="muted">{String(label)}</span><strong>{time(date instanceof Date ? date : null)}</strong></div>)}</div><SourceNote>{t("Расчёт SunCalc по координатам. Рельеф, здания и местные условия могут изменять видимость событий.", "SunCalc coordinate-based calculations. Terrain, buildings, and local conditions can change event visibility.")} <a href="https://github.com/mourner/suncalc" target="_blank" rel="noreferrer">SunCalc</a></SourceNote></Panel>
+      <Panel><div style={{ display: "flex", alignItems: "center", gap: 9 }}><Radio size={20} /><h2 className="section-title">{t("Геомагнитная активность", "Geomagnetic activity")}</h2></div><p className="muted">{t("Планетарный индекс Kp · актуальные наблюдения NOAA", "Planetary Kp index · latest NOAA observations")}</p><State loading={geomagnetic.loading && !geomagnetic.data} error={geomagnetic.error} retry={geomagnetic.refresh} />{lastKp && <><div style={{ display: "flex", alignItems: "center", gap: 20, margin: "25px 0" }}><Orbit size={42} color={kpHigh ? "#c9853e" : "#6963e8"} /><strong style={{ fontSize: 52, fontWeight: 500 }}>{lastKp.kp.toFixed(1)}<span className="muted" style={{ fontSize: 16, marginLeft: 8 }}>/ 9</span></strong></div><p>{kpHigh ? t("Достигнут порог геомагнитной бури (Kp ≥ 5).", "The geomagnetic storm threshold has been reached (Kp ≥ 5).") : t("Ниже порога геомагнитной бури (Kp < 5).", "Below the geomagnetic storm threshold (Kp < 5).")}</p><div style={{ display: "flex", gap: 4, height: 36, alignItems: "end", margin: "20px 0" }} aria-label={t("Последние значения Kp", "Recent Kp values")}>{geomagnetic.data?.points.slice(-24).map((point) => <div key={point.time} title={`${new Date(point.time * 1000).toISOString()} · Kp ${point.kp}`} style={{ flex: 1, height: `${Math.max(5, point.kp / 9 * 100)}%`, background: point.kp >= 5 ? "#c9853e" : "#aaa5eb", borderRadius: 4 }} />)}</div><SourceNote><a href="https://www.swpc.noaa.gov/products/planetary-k-index" target="_blank" rel="noreferrer">NOAA SWPC</a> · {new Date(lastKp.time * 1000).toLocaleString(locale, { timeZone: "UTC" })} UTC. {t("Это глобальная оценка, не прогноз видимости сияния и не медицинский показатель.", "A global index, not a local aurora visibility forecast or a health measure.")}</SourceNote></>}</Panel>
+    </div>
+  </div>;
+}
+
