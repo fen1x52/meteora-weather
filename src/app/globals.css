@@ -31,3 +31,73 @@ html[data-density=compact] .panel{padding:18px}html[data-density=compact] .metri
 @media(max-width:600px){.heading-actions{gap:6px}.share-button{width:38px;min-width:38px;padding:9px}.share-button span{display:none}.outdoor-card{gap:12px;padding:20px}.outdoor-score{width:61px;height:61px;border-radius:20px;font-size:18px}.outdoor-details{gap:9px 13px}}
 @media(prefers-reduced-motion:reduce){.panel,.button{transition:none!important}.metric-grid>.panel:hover,.week-panel:hover,.insight-panel:hover,.air-preview:hover{transform:none}}
 
+
+
+/* Liquid Glass: luminous, layered glass surfaces while preserving the existing layout. */
+body {
+  background-image:
+    radial-gradient(ellipse at 78% 8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 34rem),
+    radial-gradient(ellipse at 18% 68%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 30rem);
+  background-attachment: fixed;
+}
+.panel {
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--panel) 91%, white 9%),
+      color-mix(in srgb, var(--panel) 98%, transparent 2%));
+  border-color: color-mix(in srgb, var(--line) 68%, white 32%);
+  -webkit-backdrop-filter: blur(26px) saturate(1.38);
+  backdrop-filter: blur(26px) saturate(1.38);
+  box-shadow:
+    0 2px 5px rgba(15, 20, 45, .045),
+    0 18px 42px rgba(15, 20, 45, .09),
+    inset 0 1px 0 rgba(255, 255, 255, .62),
+    inset 0 -1px 0 rgba(255, 255, 255, .12);
+}
+html[data-theme=dark] .panel,
+html[data-theme=aurora] .panel,
+html[data-theme=ocean] .panel,
+html[data-theme=sunset] .panel {
+  background:
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--panel) 92%, white 8%),
+      color-mix(in srgb, var(--panel) 99%, transparent 1%));
+  border-color: color-mix(in srgb, var(--line) 76%, white 24%);
+  box-shadow:
+    0 4px 9px rgba(0, 0, 0, .16),
+    0 20px 48px rgba(0, 0, 0, .22),
+    inset 0 1px 0 rgba(255, 255, 255, .12),
+    inset 0 -1px 0 rgba(255, 255, 255, .035);
+}
+.sidebar, .topbar {
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  backdrop-filter: blur(28px) saturate(1.4);
+}
+.search-field, .segmented, .day-card, .button.secondary, .button-secondary {
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .42), 0 5px 14px rgba(20, 24, 50, .045);
+}
+.glass-button, .share-button {
+  background: linear-gradient(145deg, rgba(255,255,255,.56), rgba(255,255,255,.18));
+  border: 1px solid rgba(255,255,255,.58);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 5px 16px rgba(31,35,70,.08);
+}
+[data-theme=dark] .glass-button, [data-theme=dark] .share-button,
+[data-theme=aurora] .glass-button, [data-theme=aurora] .share-button,
+[data-theme=ocean] .glass-button, [data-theme=ocean] .share-button,
+[data-theme=sunset] .glass-button, [data-theme=sunset] .share-button {
+  background: linear-gradient(145deg, rgba(255,255,255,.2), rgba(255,255,255,.065));
+  border-color: rgba(255,255,255,.2);
+}
+.panel:hover {
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--line));
+}
+@media (prefers-reduced-transparency: reduce) {
+  .panel, .sidebar, .topbar, .search-field, .segmented, .day-card, .button.secondary, .button-secondary, .glass-button, .share-button {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
