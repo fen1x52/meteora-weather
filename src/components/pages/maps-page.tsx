@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
-import { Cloud, CloudRain, Crosshair, Layers, Thermometer, Wind } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Cloud, CloudRain, Crosshair, Layers, Pause, Play, Thermometer, Wind } from "lucide-react";
 import { useMeteora } from "@/components/providers";
 import { Metric, PageHeading, Panel, SourceNote, State } from "@/components/ui";
 import { fetchRadar, fetchWeather } from "@/lib/api";
@@ -18,12 +18,14 @@ export default function MapsPage() {
   const [point, setPoint] = useState<{ ownerId: string; location: Location } | null>(null);
   const [layer, setLayer] = useState<Layer>("radar");
   const [frameIndex, setFrameIndex] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
   const [coordinatesError, setCoordinatesError] = useState("");
   const activePoint = point?.ownerId === location.id ? point.location : null;
   const selected = activePoint ?? location;
   const radar = useResource("radar", fetchRadar);
   const forecast = useResource(`map-weather:${selected.latitude}:${selected.longitude}`, () => fetchWeather(selected));
   const frames = radar.data?.radar.past ?? [];
+  useEffect(() => { if (!playing || frames.length < 2) return; const timer = window.setInterval(() => setFrameIndex(i => ((i ?? frames.length - 1) + 1) % frames.length), 850); return () => window.clearInterval(timer); }, [playing, frames.length]);
   const frame = frames[Math.min(frameIndex ?? frames.length - 1, frames.length - 1)];
   const current = forecast.data?.current;
   const zone = forecast.data?.timezone ?? selected.timezone ?? "UTC";
@@ -57,6 +59,7 @@ export default function MapsPage() {
         radarUrl={layer === "radar" && frame && radar.data ? `${radar.data.host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png` : undefined}
         tileErrorLabel={t("Часть картографических тайлов недоступна. Данные выбранной точки доступны ниже.", "Some map tiles are unavailable. Selected location data remains available below.")} />
       {layer === "radar" && frames.length > 0 && <div style={{ marginTop: 20 }}>
+        <button className="button secondary" onClick={() => setPlaying(!playing)} aria-label={playing ? t('Остановить радар', 'Pause radar') : t('Запустить радар', 'Play radar')}>{playing ? <Pause size={16}/> : <Play size={16}/>} {playing ? t('Пауза','Pause') : t('Анимация','Animate')}</button>
         <label htmlFor="radar-time" className="muted">{t("Время радарного кадра", "Radar frame time")}: {frame && formatTime(frame.time, zone, settings.language)}</label>
         <input id="radar-time" type="range" min={0} max={frames.length - 1} step={1} value={Math.min(frameIndex ?? frames.length - 1, frames.length - 1)} onChange={(event) => setFrameIndex(Number(event.target.value))} style={{ width: "100%", accentColor: "var(--accent, #6963e8)", margin: "12px 0" }} />
         <div className="muted" style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}><span>{formatTime(frames[0].time, zone, settings.language)}</span><span>{t("Последний кадр", "Latest frame")}</span></div>
@@ -81,4 +84,3 @@ export default function MapsPage() {
     </div>
   </div>;
 }
-

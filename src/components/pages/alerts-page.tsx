@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpRight, Bell, Info, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useMeteora } from "@/components/providers";
 import { PageHeading, Panel, SourceNote, State } from "@/components/ui";
@@ -12,6 +12,9 @@ export default function AlertsPage() {
   const { location, settings, setSettings, weather, t } = useMeteora();
   const official = useResource(`alerts:${location.latitude}:${location.longitude}`, () => fetchOfficialAlerts(location));
   const [notificationStatus, setNotificationStatus] = useState("");
+  const [thresholds,setThresholds] = useState({snow:5,wind:14,change:10,rain:20,cooldown:12});
+  useEffect(()=>{const timer=window.setTimeout(()=>{try{const saved=localStorage.getItem(`meteora.alerts.${location.id}`);if(saved)setThresholds({...{snow:5,wind:14,change:10,rain:20,cooldown:12},...JSON.parse(saved)});}catch{}},0);return()=>window.clearTimeout(timer);},[location.id]);
+  const setThreshold=(key:keyof typeof thresholds,value:number)=>{const next={...thresholds,[key]:value};setThresholds(next);try{localStorage.setItem(`meteora.alerts.${location.id}`,JSON.stringify(next));}catch{}};
   const insights = weather.data ? buildInsights(weather.data, settings.language) : [];
   const weatherFlags = insights.filter(item => item.severity !== "info");
   const notify = async () => {
@@ -58,7 +61,7 @@ export default function AlertsPage() {
       {weather.data && <div className="grid-2">{insights.map(insight => <article className={`insight ${insight.severity}`} key={insight.id}><span className="overline">{insight.severity === "warning" ? <TriangleAlert size={17}/> : <Info size={17}/>}</span><h3>{insight.title}</h3><p>{insight.body}</p></article>)}</div>}
       {weather.data && <SourceNote>{t("Прогноз получен", "Forecast fetched")} {formatTime(Date.parse(weather.data.fetchedAt) / 1000, weather.data.timezone, settings.language)} · {weather.data.timezone} · <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a></SourceNote>}
     </Panel>
+    <Panel><h2>Alerts Pro · {t('Личные пороги','Personal thresholds')}</h2><p className="muted">{t('Для выбранного города. Проверка при открытой странице; фоновые push-уведомления не подключены.','For the selected city. Evaluated while the page is open; background push is unavailable.')}</p><div className="grid-3" style={{marginTop:16}}>{([['snow','Сильный снег, см','Heavy snow, cm'],['wind','Сильный ветер, м/с','Strong wind, m/s'],['change','Изменение температуры, °C','Temperature change, °C'],['rain','Сильные осадки, мм','Heavy precipitation, mm'],['cooldown','Повтор через, часы','Repeat after, hours']] as const).map(([key,ru,en])=><label key={key}>{t(ru,en)}<input type="number" min={1} max={key==='cooldown'?168:100} value={thresholds[key]} onChange={e=>setThreshold(key,Math.max(1,Number(e.target.value)||1))}/></label>)}</div>{weather.data&&(()=>{const d=weather.data.daily,c=weather.data.current,h=weather.data.hourly;const temp=h.temperature_2m.slice(0,24).filter((v):v is number=>v!=null);const change=temp.length?Math.max(...temp)-Math.min(...temp):0;const code=c.weather_code??0;const flags=[d.snowfall_sum[0]!=null&&d.snowfall_sum[0]!>=thresholds.snow?'Сильный снег':null,c.wind_speed_10m!=null&&c.wind_speed_10m>=thresholds.wind?'Сильный ветер':null,change>=thresholds.change?'Резкое изменение температуры':null,d.precipitation_sum[0]!=null&&d.precipitation_sum[0]!>=thresholds.rain?'Сильные осадки':null,code>=95?'Гроза':null,c.temperature_2m!=null&&c.temperature_2m<=1&&c.precipitation!=null&&c.precipitation>0?'Возможный гололёд':null].filter(Boolean);return <div className="notice" style={{marginTop:18}}>{flags.length?flags.join(' · '):t('Пороговые условия сейчас не обнаружены.','No threshold conditions detected now.')}</div>})()}<SourceNote>{t('Автоматический расчёт по Open-Meteo, не официальное предупреждение. Возможный гололёд оценивается приблизительно.','Calculated from Open-Meteo, not an official warning. Ice risk is approximate.')}</SourceNote></Panel>
     <Panel><div className="section-heading"><h2><Bell size={21}/>{t("Уведомления браузера", "Browser notifications")}</h2></div><p className="muted">{t("Можно отправить текущую погодную сводку в уведомления вашего браузера. Требуется разрешение. Фоновая push-доставка при закрытом сайте не подключена.", "Send the current weather summary to your browser notifications. Permission is required. Background push delivery while the site is closed is not connected.")}</p><button className="button" onClick={() => void notify()} disabled={insights.length === 0}><Bell size={16}/>{t("Показать текущую сводку", "Notify me with this summary")}</button>{notificationStatus && <p role="status" className="notice">{notificationStatus}</p>}</Panel>
   </div>;
 }
-

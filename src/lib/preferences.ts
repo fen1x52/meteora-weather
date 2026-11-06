@@ -1,6 +1,6 @@
 import type { Location, Settings } from './types';
-export const DEFAULT_LOCATION: Location = { id: '524901', name: 'Москва', country: 'Россия', countryCode: 'RU', admin1: 'Москва', latitude: 55.7522, longitude: 37.6156, timezone: 'Europe/Moscow' };
-export const DEFAULT_SETTINGS: Settings = { language: 'ru', temperature: 'celsius', wind: 'ms', pressure: 'hpa', theme: 'auto', density: 'comfortable', animations: true, notifications: false };
+export const DEFAULT_LOCATION: Location = { id: '499099', name: 'Самара', country: 'Россия', countryCode: 'RU', admin1: 'Самарская область', latitude: 53.1959, longitude: 50.1002, timezone: 'Europe/Samara' };
+export const DEFAULT_SETTINGS: Settings = { language: 'ru', temperature: 'celsius', wind: 'ms', pressure: 'mmhg', theme: 'dark', density: 'comfortable', animations: true, notifications: false };
 export interface Preferences { location: Location; settings: Settings; favorites: Location[]; recent: Location[] }
 const defaults: Preferences = { location: DEFAULT_LOCATION, settings: DEFAULT_SETTINGS, favorites: [], recent: [] };
 const KEY = 'meteora.preferences.v1';
@@ -48,6 +48,5 @@ export function updatePreferences(update: Partial<Preferences>) {
   listeners.forEach(fn => fn());
 }
 export function clearPreferences() { snapshot = defaults; try { localStorage.removeItem(KEY); } catch {} listeners.forEach(fn => fn()); }
-
 
 

@@ -6,7 +6,7 @@ const config: NextConfig = {
   images: { unoptimized: true },
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: { cpus: 1 },
 };
 export default config;
-
 
