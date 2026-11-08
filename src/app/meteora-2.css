@@ -59,3 +59,39 @@ html[data-theme=dark] .hour-item,html[data-theme=dark] .day-card{color:var(--tex
   .weather-hero { box-shadow:0 18px 45px color-mix(in srgb,var(--accent) 20%,transparent),inset 0 1px 0 #ffffff40; }
 }
 
+
+/* Desktop motion: entrance, ambient detail and interactive feedback. */
+@keyframes meteora-rise { from { opacity:0; translate:0 18px; } to { opacity:1; translate:0 0; } }
+@keyframes meteora-drift { 0%,100% { translate:0 0; } 50% { translate:0 -7px; } }
+@keyframes meteora-glow { 0%,100% { opacity:.45; scale:1; } 50% { opacity:.9; scale:1.04; } }
+@keyframes meteora-pulse { 0%,100% { box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 30%,transparent); } 50% { box-shadow:0 0 0 6px transparent; } }
+@media (min-width:761px) and (prefers-reduced-motion:no-preference) {
+  html:not([data-motion=off]) .legacy-dashboard .page-heading,
+  html:not([data-motion=off]) .legacy-dashboard .weather-hero,
+  html:not([data-motion=off]) .legacy-dashboard .hero-side,
+  html:not([data-motion=off]) .legacy-dashboard .outdoor-card,
+  html:not([data-motion=off]) .legacy-dashboard .rain-outlook,
+  html:not([data-motion=off]) .legacy-dashboard .day-highlights,
+  html:not([data-motion=off]) .legacy-dashboard .dashboard-middle,
+  html:not([data-motion=off]) .legacy-dashboard .metric-grid { animation:meteora-rise .65s both cubic-bezier(.2,.7,.2,1); }
+  html:not([data-motion=off]) .legacy-dashboard .hero-side { animation-delay:.08s; }
+  html:not([data-motion=off]) .legacy-dashboard .outdoor-card { animation-delay:.12s; }
+  html:not([data-motion=off]) .legacy-dashboard .rain-outlook { animation-delay:.16s; }
+  html:not([data-motion=off]) .legacy-dashboard .day-highlights { animation-delay:.2s; }
+  html:not([data-motion=off]) .legacy-dashboard .dashboard-middle { animation-delay:.24s; }
+  html:not([data-motion=off]) .legacy-dashboard .metric-grid { animation-delay:.28s; }
+  html:not([data-motion=off]) .weather-hero::before { animation:meteora-glow 5s ease-in-out infinite; }
+  html:not([data-motion=off]) .highlight-icon, html:not([data-motion=off]) .rain-outlook-icon { animation:meteora-drift 4s ease-in-out infinite; }
+  html:not([data-motion=off]) .highlight-item:nth-child(2) .highlight-icon { animation-delay:-1.3s; }
+  html:not([data-motion=off]) .highlight-item:nth-child(3) .highlight-icon { animation-delay:-2.6s; }
+  html:not([data-motion=off]) .status-dot { animation:meteora-pulse 2.8s ease-out infinite; }
+  html:not([data-motion=off]) .nav-link, html:not([data-motion=off]) .highlight-item, html:not([data-motion=off]) .day-card, html:not([data-motion=off]) .icon-button, html:not([data-motion=off]) .button, html:not([data-motion=off]) .rain-outlook-link { transition:transform .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease, color .22s ease; }
+}
+@media (min-width:761px) and (hover:hover) and (prefers-reduced-motion:no-preference) {
+  html:not([data-motion=off]) .nav-link:hover { transform:translateX(4px); }
+  html:not([data-motion=off]) .highlight-item:hover, html:not([data-motion=off]) .day-card:hover { transform:translateY(-5px); border-color:var(--accent); box-shadow:0 12px 26px color-mix(in srgb,var(--accent) 16%,transparent); }
+  html:not([data-motion=off]) .icon-button:hover { transform:scale(1.1); }
+  html:not([data-motion=off]) .button:active, html:not([data-motion=off]) .icon-button:active { transform:scale(.95); }
+  html:not([data-motion=off]) .rain-outlook-link:hover { transform:translateX(4px); }
+}
+
